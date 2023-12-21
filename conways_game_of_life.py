@@ -1,69 +1,82 @@
 import pygame
 import time
 
-# Define constants
-WIDTH, HEIGHT = 800, 600
-CELL_SIZE = 10
-ROWS, COLS = HEIGHT // CELL_SIZE, WIDTH // CELL_SIZE
-FPS = 10
+class GameOfLife:
+    def __init__(self, width, height, cell_size, fps):
+        self.WIDTH, self.HEIGHT = width, height
+        self.CELL_SIZE = cell_size
+        self.ROWS, self.COLS = height // cell_size, width // cell_size
+        self.FPS = fps
 
-# Initialize pygame
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Conway's Game of Life - Toroidal Grid")
+        pygame.init()
+        self.screen = pygame.display.set_mode((width, height))
+        pygame.display.set_caption("Conway's Game of Life - Toroidal Grid")
 
-# Function to initialize the grid with a glider at the center
-def initialize_grid():
-    grid = [[0] * COLS for _ in range(ROWS)]
-    glider_pattern = [[0, 1, 0],
-                      [0, 0, 1],
-                      [1, 1, 1]]
-    center_row, center_col = ROWS // 2, COLS // 2
-    for i in range(3):
-        for j in range(3):
-            grid[center_row + i][center_col + j] = glider_pattern[i][j]
-    return grid
+        self.grid = self.initialize_grid()
+        self.clock = pygame.time.Clock()
 
-# Function to draw the grid on the screen
-def draw_grid(grid):
-    screen.fill((255, 255, 255))
-    for row in range(ROWS):
-        for col in range(COLS):
-            color = (0, 0, 0) if grid[row][col] else (255, 255, 255)
-            pygame.draw.rect(screen, color, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE), 0)
+    def initialize_grid(self):
+        grid = [[0] * self.COLS for _ in range(self.ROWS)]
+        
+        # First pattern
+        pattern1 = [
+            [0, 0, 1],
+            [1, 0, 1],
+            [0, 1, 1]
+        ]
+        center_row1, center_col1 = self.ROWS // 3, 2* self.COLS // 3
+        for i in range(3):
+            for j in range(3):
+                grid[center_row1 + i][center_col1 + j] = pattern1[i][j]
 
-# Function to update the grid based on Conway's rules with toroidal behavior
-def update_grid(grid):
-    new_grid = [[0] * COLS for _ in range(ROWS)]
-    for row in range(ROWS):
-        for col in range(COLS):
-            neighbors = sum(grid[(row + i) % ROWS][(col + j) % COLS] for i in range(-1, 2) for j in range(-1, 2)) - grid[row][col]
-            if grid[row][col] == 1 and (neighbors < 2 or neighbors > 3):
-                new_grid[row][col] = 0
-            elif grid[row][col] == 0 and neighbors == 3:
-                new_grid[row][col] = 1
-            else:
-                new_grid[row][col] = grid[row][col]
-    return new_grid
+        # Second pattern
+        pattern2 = [
+            [1, 1, 1],
+            [1, 0, 1],
+            [1, 1, 1]
+        ]
+        center_row2, center_col2 = 2 * self.ROWS // 3, 2 * self.COLS // 3
+        for i in range(3):
+            for j in range(3):
+                grid[center_row2 + i][center_col2 + j] = pattern2[i][j]
 
-# Main function to run the simulation
-def main():
-    grid = initialize_grid()
-    clock = pygame.time.Clock()
+        return grid
 
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+    def draw_grid(self):
+        self.screen.fill((255, 255, 255))
+        for row in range(self.ROWS):
+            for col in range(self.COLS):
+                color = (0, 0, 0) if self.grid[row][col] else (255, 255, 255)
+                pygame.draw.rect(self.screen, color, (col * self.CELL_SIZE, row * self.CELL_SIZE, self.CELL_SIZE, self.CELL_SIZE), 0)
 
-        draw_grid(grid)
-        pygame.display.flip()
-        grid = update_grid(grid)
+    def update_grid(self):
+        new_grid = [[0] * self.COLS for _ in range(self.ROWS)]
+        for row in range(self.ROWS):
+            for col in range(self.COLS):
+                neighbors = sum(self.grid[(row + i) % self.ROWS][(col + j) % self.COLS] for i in range(-1, 2) for j in range(-1, 2)) - self.grid[row][col]
+                if self.grid[row][col] == 1 and (neighbors < 2 or neighbors > 3):
+                    new_grid[row][col] = 0
+                elif self.grid[row][col] == 0 and neighbors == 3:
+                    new_grid[row][col] = 1
+                else:
+                    new_grid[row][col] = self.grid[row][col]
+        return new_grid
 
-        clock.tick(FPS)
+    def run_simulation(self):
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
 
-    pygame.quit()
+            self.draw_grid()
+            pygame.display.flip()
+            self.grid = self.update_grid()
+
+            self.clock.tick(self.FPS)
+
+        pygame.quit()
 
 if __name__ == "__main__":
-    main()
+    game = GameOfLife(1920, 1080, 10, 60)
+    game.run_simulation()
