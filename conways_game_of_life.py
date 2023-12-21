@@ -40,6 +40,17 @@ class GameOfLife:
             for j in range(3):
                 grid[center_row2 + i][center_col2 + j] = pattern2[i][j]
 
+        # Glider - A Spaceship
+        glider = [
+            [1, 0, 0],
+            [0, 1, 1],
+            [1, 1, 0]
+        ]
+        glider_row, glider_col = self.ROWS // 2, self.COLS // 2
+        for i in range(3):
+            for j in range(3):
+                grid[glider_row + i][glider_col + j] = glider[i][j]
+                
         return grid
 
     def draw_grid(self):
@@ -88,5 +99,6 @@ class GameOfLife:
 
 if __name__ == "__main__":
     game = GameOfLife(960, 540, 10, 20)
-    #game = GameOfLife(1920, 1080, 20, 20)
+
+    #game = GameOfLife(1920, 1080, 10, 60)
     game.run_simulation()
