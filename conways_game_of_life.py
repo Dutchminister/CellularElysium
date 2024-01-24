@@ -98,7 +98,7 @@ class GameOfLife:
 
 
 if __name__ == "__main__":
-    game = GameOfLife(960, 540, 10, 20)
+    #game = GameOfLife(960, 540, 10, 20)
 
-    #game = GameOfLife(1920, 1080, 10, 60)
+    game = GameOfLife(1920, 1080, 10, 60)
     game.run_simulation()
