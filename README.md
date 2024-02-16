@@ -29,6 +29,19 @@ Tested on Windows 10
 4. In the Screen Saver Settings window, find and select your screensaver from the drop-down menu.
 5. Click "Apply" and then "OK" to set your screensaver.
 
+
+## Create your own patterns!
+
+### 1. Define the pattern matrix:
+Create a 2D matrix representing the pattern you want to add. Each element of the matrix should represent a cell in the pattern, where 1 indicates a live cell and 0 indicates a dead cell.
+
+### 2. Choose a position to place the pattern:
+Decide where you want to place the pattern on the grid. You can specify the row and column indices where the top-left corner of the pattern will be located.
+
+### 3. Update the `initialize_grid` method:
+Modify the `initialize_grid` method to include the new pattern. You can add multiple nested loops to iterate over the pattern matrix and place it onto the grid at the desired position.
+
+
 ## License
 Shield: [![CC BY 4.0][cc-by-shield]][cc-by]
 
