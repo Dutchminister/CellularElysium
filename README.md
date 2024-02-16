@@ -1,7 +1,7 @@
 # Conways Game of Life ScreenSaver
 
 ## Description
-Give life to your screensaver! 
+Give life to your screensaver! <br>
 Tested on Windows 10
 
 ## Installation
