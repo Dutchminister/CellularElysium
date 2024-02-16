@@ -29,6 +29,10 @@ Tested on Windows 10
     pyinstaller --onefile conways_game_of_life.py
     ```
 
+## Install as Screensaver (Windows)
+1. After building the executable, rename the executable file to have a `.scr` extension. For example, if your executable is named `conways_game_of_life.exe`, rename it to `conways_game_of_life.scr`.
+2. Copy the renamed `.scr` file into the `System32` directory. This directory is typically located at `C:\Windows\System32`. You may need administrative privileges to copy files into this directory.
+
 ## Set Screensaver
 1. Right-click on your desktop and select "Personalize" from the context menu.
 2. In the Personalization window, click on "Lock screen" in the left sidebar.
