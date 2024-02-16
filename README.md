@@ -5,6 +5,11 @@ Give life to your screensaver! <br>
 Tested on Windows 10
 
 ## Installation
+
+0. Install python 3:
+    ```bash
+        winget install -e --id Python.Python.3.10
+    
 1. Install dependencies:
     ```bash
     pip install -r requirements.txt
