@@ -1,7 +1,8 @@
 # Conways Game of Life ScreenSaver
 
 ## Description
-Give life to your screensaver!
+Give life to your screensaver! 
+Tested on Windows 10
 
 ## Installation
 1. Install dependencies:
