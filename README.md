@@ -1,7 +1,7 @@
-# Project Name
+# Conways Game of Life ScreenSaver
 
 ## Description
-[Provide a brief description of your project here]
+Give life to your screensaver!
 
 ## Installation
 1. Install dependencies:
