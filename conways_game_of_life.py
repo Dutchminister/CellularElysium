@@ -17,40 +17,18 @@ class GameOfLife:
 
     def initialize_grid(self):
         grid = [[0] * self.COLS for _ in range(self.ROWS)]
-        
-        # First pattern - A Star is Born
-        pattern1 = [
-            [0, 0, 1],
-            [1, 0, 1],
-            [0, 1, 1]
-        ]
-        center_row1, center_col1 = self.ROWS // 3, 2 * self.COLS // 3
-        for i in range(3):
-            for j in range(3):
-                grid[center_row1 + i][center_col1 + j] = pattern1[i][j]
-
-        # Second pattern - Celestial Harmony
-        pattern2 = [
-            [1, 1, 1],
-            [1, 0, 1],
-            [1, 1, 1]
-        ]
-        center_row2, center_col2 = 2 * self.ROWS // 3, 2 * self.COLS // 3
-        for i in range(3):
-            for j in range(3):
-                grid[center_row2 + i][center_col2 + j] = pattern2[i][j]
-
-        # Glider - A Spaceship
-        glider = [
-            [1, 0, 0],
+    
+        # Methuselah - R-pentomino
+        rpentomino = [
             [0, 1, 1],
-            [1, 1, 0]
+            [1, 1, 0],
+            [0, 1, 0]
         ]
-        glider_row, glider_col = self.ROWS // 2, self.COLS // 2
+        rpentomino_row, rpentomino_col = self.ROWS // 2, self.COLS // 2 - 3
         for i in range(3):
             for j in range(3):
-                grid[glider_row + i][glider_col + j] = glider[i][j]
-                
+                grid[rpentomino_row + i][rpentomino_col + j] = rpentomino[i][j]
+
         return grid
 
     def draw_grid(self):
@@ -98,7 +76,5 @@ class GameOfLife:
 
 
 if __name__ == "__main__":
-    #game = GameOfLife(960, 540, 10, 20)
-
     game = GameOfLife(1920, 1080, 10, 60)
     game.run_simulation()
