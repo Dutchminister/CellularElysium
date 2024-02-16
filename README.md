@@ -8,7 +8,9 @@ Tested on Windows 10
 
 0. Install python 3:
     ```bash
-        winget install -e --id Python.Python.3.10
+    winget install -e --id Python.Python.3.10
+    ```
+
     
 1. Install dependencies:
     ```bash
