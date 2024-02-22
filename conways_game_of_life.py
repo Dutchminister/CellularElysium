@@ -1,5 +1,6 @@
 import pygame
 import time
+import os
 
 class GameOfLife:
     def __init__(self, width, height, cell_size, fps):
@@ -7,6 +8,7 @@ class GameOfLife:
         self.CELL_SIZE = cell_size
         self.ROWS, self.COLS = height // cell_size, width // cell_size
         self.FPS = fps
+        self.generation = 0  # Track current generation
 
         pygame.init()
         self.screen = pygame.display.set_mode((width, height))
@@ -14,6 +16,11 @@ class GameOfLife:
 
         self.grid = self.initialize_grid()
         self.clock = pygame.time.Clock()
+
+        # Load font for generation display
+        self.font = pygame.font.SysFont(None, 36)
+        self.stable_generation = None  # Track the generation where stability is reached
+
 
     def initialize_grid(self):
         grid = [[0] * self.COLS for _ in range(self.ROWS)]
@@ -53,28 +60,67 @@ class GameOfLife:
 
     def run_simulation(self):
         stable_count = 0
-        while stable_count < 10:  # Adjust the stability criterion as needed
+        running = True
+        previous_grids = []  # List to store previous grid configurations
+        while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.quit()
-                    return
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                        if stable_count >= 10:
+                            self.stable_generation = self.generation
+                            running = False
 
-            self.draw_grid()
-            pygame.display.flip()
+            if stable_count < 10:
+                self.draw_grid()
+                
+                # Display generation number
+                text = self.font.render(f"Generation: {self.generation}", True, (255, 255, 255))
+                self.screen.blit(text, (10, 10))
 
-            new_grid = self.update_grid()
+                pygame.display.flip()
 
-            if self.grid == new_grid:
-                stable_count += 1
+                new_grid = self.update_grid()
+
+                # Check for periodic grid
+                if new_grid in previous_grids:
+                    print("Periodic grid achieved at generation:", self.generation)
+                    text = self.font.render(f"Periodic Generation: {self.generation}", True, (0, 255, 0))  # Green color
+                    text_rect = text.get_rect(center=(self.WIDTH // 2, self.HEIGHT * 3 // 4))  # Lower position
+                    self.screen.blit(text, text_rect)
+                    running = False
+                else:
+                    previous_grids.append(new_grid)
+
+                if len(previous_grids) > 10:  # Limit the number of previous grids to check
+                    previous_grids.pop(0)
+
+                self.grid = new_grid
+                self.generation += 1  # Increment generation number
+                self.clock.tick(self.FPS)
             else:
-                stable_count = 0
+                self.draw_grid()
 
-            self.grid = new_grid
-            self.clock.tick(self.FPS)
+                # Display final generation count
+                text = self.font.render(f"Stable Generation: {self.stable_generation}", True, (0, 255, 0))
+                text_rect = text.get_rect(center=(self.WIDTH // 2, self.HEIGHT * 3 // 4))  # Lower position
+                self.screen.blit(text, text_rect)
+
+                pygame.display.flip()
+                self.clock.tick(self.FPS)
 
         pygame.quit()
 
 
 if __name__ == "__main__":
-    game = GameOfLife(1920, 1080, 10, 60)
+    # Set up the dimensions of the window
+    width = 1920
+    height = 1080
+    # Simulation pixel size
+    pixel_size= 10
+    frame_rate = 60
+
+    #Provide the parameters for simulation
+    game = GameOfLife(width, height, pixel_size, frame_rate)
     game.run_simulation()
