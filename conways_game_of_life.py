@@ -71,6 +71,7 @@ class GameOfLife:
                         if stable_count >= 10:
                             self.stable_generation = self.generation
                             running = False
+                            end_reason = "Stable state"
 
             if stable_count < 10:
                 self.draw_grid()
@@ -78,18 +79,17 @@ class GameOfLife:
                 # Display generation number
                 text = self.font.render(f"Generation: {self.generation}", True, (255, 255, 255))
                 self.screen.blit(text, (10, 10))
-
                 pygame.display.flip()
-
                 new_grid = self.update_grid()
 
                 # Check for periodic grid
                 if new_grid in previous_grids:
-                    print("Periodic grid achieved at generation:", self.generation)
+                    print("Periodic grid reachedat generation:", self.generation)
                     text = self.font.render(f"Periodic Generation: {self.generation}", True, (0, 255, 0))  # Green color
                     text_rect = text.get_rect(center=(self.WIDTH // 2, self.HEIGHT * 3 // 4))  # Lower position
                     self.screen.blit(text, text_rect)
                     running = False
+                    end_reason = "Periodic state"
                 else:
                     previous_grids.append(new_grid)
 
@@ -102,16 +102,29 @@ class GameOfLife:
             else:
                 self.draw_grid()
 
-                # Display final generation count
+                # Display generation when stablity is achieved
                 text = self.font.render(f"Stable Generation: {self.stable_generation}", True, (0, 255, 0))
                 text_rect = text.get_rect(center=(self.WIDTH // 2, self.HEIGHT * 3 // 4))  # Lower position
                 self.screen.blit(text, text_rect)
-
                 pygame.display.flip()
                 self.clock.tick(self.FPS)
 
-        pygame.quit()
+        # Display report on screen
+        report_text = f"Simulation ended at generation {self.generation} due to a {end_reason}. \nPress Enter or Space to exit."
+        text = self.font.render(report_text, True, (255, 255, 255))
+        text_rect = text.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2))
+        self.screen.blit(text, text_rect)
+        pygame.display.flip()
 
+        # Wait for user to press Enter or Space to exit
+        exit_pressed = False
+        while not exit_pressed:
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                        exit_pressed = True
+
+        pygame.quit()
 
 if __name__ == "__main__":
     # Set up the dimensions of the window
