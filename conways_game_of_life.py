@@ -13,13 +13,12 @@ class GameOfLife:
         pygame.init()
         self.screen = pygame.display.set_mode((width, height))
         pygame.display.set_caption("Conway's Game of Life - A Cosmic Dance of Cells")
-
         self.grid = self.initialize_grid()
         self.clock = pygame.time.Clock()
-
         # Load font for generation display
         self.font = pygame.font.SysFont(None, 36)
-        self.stable_generation = None  # Track the generation where stability is reached
+        # Track the generation where stability is reached
+        self.stable_generation = None
 
 
     def initialize_grid(self):
@@ -85,9 +84,6 @@ class GameOfLife:
                 # Check for periodic grid
                 if new_grid in previous_grids:
                     print("Periodic grid reachedat generation:", self.generation)
-                    text = self.font.render(f"Periodic Generation: {self.generation}", True, (0, 255, 0))  # Green color
-                    text_rect = text.get_rect(center=(self.WIDTH // 2, self.HEIGHT * 3 // 4))  # Lower position
-                    self.screen.blit(text, text_rect)
                     running = False
                     end_reason = "Periodic state"
                 else:
@@ -101,18 +97,13 @@ class GameOfLife:
                 self.clock.tick(self.FPS)
             else:
                 self.draw_grid()
-
-                # Display generation when stablity is achieved
-                text = self.font.render(f"Stable Generation: {self.stable_generation}", True, (0, 255, 0))
-                text_rect = text.get_rect(center=(self.WIDTH // 2, self.HEIGHT * 3 // 4))  # Lower position
-                self.screen.blit(text, text_rect)
                 pygame.display.flip()
                 self.clock.tick(self.FPS)
 
-        # Display report on screen
-        report_text = f"Simulation ended at generation {self.generation} due to a {end_reason}. \nPress Enter or Space to exit."
-        text = self.font.render(report_text, True, (255, 255, 255))
-        text_rect = text.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2))
+        # Display simulation results
+        report_text = f"Simulation ended at generation {self.generation} due to a {end_reason}. Press Space to exit."
+        text = self.font.render(report_text, True, (0, 255, 0))
+        text_rect = text.get_rect(center=(self.WIDTH // 2, self.HEIGHT - 10))  # Bottom of screen
         self.screen.blit(text, text_rect)
         pygame.display.flip()
 
