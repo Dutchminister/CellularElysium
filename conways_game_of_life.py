@@ -8,14 +8,19 @@ class GameOfLife:
         self.CELL_SIZE = cell_size
         self.ROWS, self.COLS = height // cell_size, width // cell_size
         self.FPS = fps
-        self.generation = 0
+        self.generation = 0  # Track current generation
+
         pygame.init()
-        self.screen = pygame.display.set_mode((width, height))
+        # Enable hardware acceleration
+        self.screen = pygame.display.set_mode((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
         pygame.display.set_caption("Conway's Game of Life - A Cosmic Dance of Cells")
         self.grid = self.initialize_grid()
         self.clock = pygame.time.Clock()
+        # Load font for generation display
         self.font = pygame.font.SysFont(None, 36)
+        # Track the generation where stability is reached
         self.stable_generation = None
+        
         # Initialize neighbor counts array
         self.neighbor_counts = np.zeros((self.ROWS, self.COLS), dtype=int)
 
