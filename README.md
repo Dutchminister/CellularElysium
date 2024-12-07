@@ -20,7 +20,7 @@ Tested on Windows 10
 ## Usage
 1. Run the program:
     ```bash
-    python3 ./conways_game_of_life.py
+    python ./conways_game_of_life.py
     ```
 
 ## Build
