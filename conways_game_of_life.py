@@ -123,11 +123,11 @@ class GameOfLife:
 
 if __name__ == "__main__":
     # Set up the dimensions of the window
-    width = 1920
-    height = 1080
+    width = 2160
+    height = 1920
     # Simulation pixel size
     pixel_size= 10
-    frame_rate = 60
+    frame_rate = 74.97
 
     #Provide the parameters for simulation
     game = GameOfLife(width, height, pixel_size, frame_rate)
