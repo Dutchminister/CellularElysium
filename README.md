@@ -1,8 +1,46 @@
 # Conways Game of Life ScreenSaver
 
 ## Description
-Give life to your screensaver! <br>
-Tested on Windows 10
+
+This program is an implementation of Conway's Game of Life, a classic cellular automaton devised by the British mathematician John Horton Conway in 1970. The simulation is built using the Pygame library to visualize the evolving patterns of live and dead cells on a grid.
+
+### What is Conway's Game of Life?
+
+Conway's Game of Life is a zero-player game, meaning that its evolution is determined by its initial state, requiring no further input. One interacts with the Game of Life by creating an initial configuration and observing how it evolves. It is Turing complete and can simulate a universal constructor or any other Turing machine.
+
+The "game" takes place on a two-dimensional grid of square cells, each of which can be in one of two possible states: alive or dead. Every cell interacts with its eight neighbours (horizontally, vertically, or diagonally adjacent). At each step in time, the following transitions occur:
+
+1.  **Underpopulation:** Any live cell with fewer than two live neighbours dies.
+2.  **Survival:** Any live cell with two or three live neighbours lives on to the next generation.
+3.  **Overpopulation:** Any live cell with more than three live neighbours dies.
+4.  **Reproduction:** Any dead cell with exactly three live neighbours becomes a live cell.
+
+These simple rules lead to a wide variety of complex and fascinating patterns.
+
+## Simulation Details
+
+### Initial State and Evolution
+
+The simulation typically starts with a predefined pattern of live cells on the grid. In this implementation, the grid is initialized with a common small pattern known as the **R-pentomino**. This pattern is placed near the center of the grid.
+
+The grid then evolves step by step, with each step representing a new generation. The state of each cell (alive or dead) in the next generation is determined by the rules of Conway's Game of Life, as described in the "What is Conway's Game of Life?" section above.
+
+### Visual Representation
+
+The Pygame window displays the grid of cells:
+*   **Live cells** are typically drawn in one color (e.g., white or bright).
+*   **Dead cells** are drawn in another color (e.g., black or dark), forming the background.
+*   The display is updated after each generation to show the current state of the grid, allowing the user to observe the patterns as they change over time.
+
+## Termination Conditions
+
+The simulation can end in several ways:
+
+*   **Periodic State Detection:** The simulation keeps track of a history of grid states. If the current grid state matches a state from the recent history, it indicates that the simulation has entered a periodic cycle (a repeating pattern). When such a cycle is detected, the simulation terminates to prevent an endless loop.
+
+*   **Stable State Detection (Note: Currently Non-Functional):** The simulation intends to detect stable states (where the grid pattern no longer changes). Logic for this involves a variable `stable_count` (within the `GameOfLife` class's `run_simulation` method). This variable is initialized to 0 but is not correctly updated during the simulation loop when the grid state remains unchanged across generations. As a result, the condition to terminate the simulation due to stability (`stable_count >= 10`) is never met through the natural evolution of the grid, and this feature does not currently work as intended. The simulation will not automatically stop for all stable patterns based on this mechanism.
+
+*   **User Intervention:** The user can manually terminate the simulation at any time by closing the Pygame window (e.g., by clicking the close button or using a system command like Alt+F4).
 
 ## Installation
 
