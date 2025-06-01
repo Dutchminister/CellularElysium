@@ -38,9 +38,36 @@ The simulation can end in several ways:
 
 *   **Periodic State Detection:** The simulation keeps track of a history of grid states. If the current grid state matches a state from the recent history, it indicates that the simulation has entered a periodic cycle (a repeating pattern). When such a cycle is detected, the simulation terminates to prevent an endless loop.
 
-*   **Stable State Detection (Note: Currently Non-Functional):** The simulation intends to detect stable states (where the grid pattern no longer changes). Logic for this involves a variable `stable_count` (within the `GameOfLife` class's `run_simulation` method). This variable is initialized to 0 but is not correctly updated during the simulation loop when the grid state remains unchanged across generations. As a result, the condition to terminate the simulation due to stability (`stable_count >= 10`) is never met through the natural evolution of the grid, and this feature does not currently work as intended. The simulation will not automatically stop for all stable patterns based on this mechanism.
+*   **Stable State Detection:** The simulation can detect stable states where the grid pattern no longer changes across generations. If the grid remains unchanged for 10 consecutive generations, the simulation concludes, reporting a stable state.
 
 *   **User Intervention:** The user can manually terminate the simulation at any time by closing the Pygame window (e.g., by clicking the close button or using a system command like Alt+F4).
+
+## Key Features and Improvements
+
+### Interactive Grid Editor
+The simulation now starts in an interactive editor mode, allowing you to design your own initial patterns or modify existing ones before starting the simulation.
+
+#### Controls
+- **Mouse Click:** Click on any cell on the grid to toggle its state (alive/dead). Live cells created this way start with an age of 1.
+
+#### Editor Buttons
+Located at the bottom of the screen, these buttons provide control over the grid and simulation:
+- **Start:** Begins the Conway's Game of Life simulation using the pattern currently displayed on the grid. Resets generation and stability counters.
+- **Clear:** Clears the entire grid, setting all cells to dead and their ages to 0.
+- **Save:** Saves the current grid pattern to a file named `custom_grid.json` in the program's directory.
+- **Load:** Loads a grid pattern from `custom_grid.json`. If the file does not exist or is invalid, an error message is printed to the console. Loaded live cells will have their age set to 1.
+- **Load Default:** Resets the grid to the predefined starting pattern (the R-pentomino) with appropriate cell ages (age 1 for live cells).
+
+### Visual Enhancements
+- **Cell Aging Colors:** Live cells now change color based on the number of generations they have survived:
+    - Generation 1: Bright white (255, 255, 255)
+    - Generation 2: Light grey (220, 220, 220)
+    - Generation 3: Medium grey (180, 180, 180)
+    - Generation 4+: Dark grey (140, 140, 140)
+  This provides a clearer visual distinction for older, stable parts of a pattern versus newer, active areas.
+
+### Performance Optimization
+- **Efficient Neighbor Counting:** The calculation of live neighbors for each cell is now performed using `scipy.signal.convolve2d`. This method is significantly more efficient than manual iteration, especially on larger grids, leading to improved simulation performance.
 
 ## Installation
 
