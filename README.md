@@ -76,8 +76,17 @@ Located at the bottom of the screen, these buttons provide control over the grid
     winget install -e --id Python.Python.3.10
     ```
 
+1. Create a virtual environment:
+    ```
+    python -m venv venv
+    ```
+
+2. Activate the virtual environment:
+    ```
+    venv\Scripts\activate
+    ```
     
-1. Install dependencies:
+3. Install dependencies:
     ```bash
     pip install -r requirements.txt
     ```
