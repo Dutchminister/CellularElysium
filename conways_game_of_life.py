@@ -2,6 +2,7 @@ import pygame
 import numpy as np
 import scipy
 import json
+import time
 
 class GameOfLife:
     def __init__(self, width, height, cell_size, fps):
@@ -56,14 +57,19 @@ class GameOfLife:
 
     def initialize_grid(self):
         grid = np.zeros((self.ROWS, self.COLS), dtype=int)
-        # Methuselah - R-pentomino
-        rpentomino = np.array([
-            [0, 1, 1],
-            [1, 1, 0],
-            [0, 1, 0]
-        ])
-        rpentomino_row, rpentomino_col = self.ROWS // 2, self.COLS // 2 - 3
-        grid[rpentomino_row:rpentomino_row+3, rpentomino_col:rpentomino_col+3] = rpentomino
+        
+        # Methuselah - Acorn
+        acorn = [
+            (0, 1), (1, 3),
+            (2, 0), (2, 1), (2, 4), (2, 5), (2, 6)
+        ]
+        
+        start_row = self.ROWS // 2 - 1
+        start_col = self.COLS // 2 - 3
+        
+        for r, c in acorn:
+            grid[start_row + r, start_col + c] = 1
+
         return grid
 
     def draw_grid(self):
@@ -193,6 +199,8 @@ class GameOfLife:
 
     def run_simulation(self):
         running = True
+        #Start a timer       
+        start_time = time.time()
         # previous_grids is for periodic state detection in simulation mode
         previous_grids = []
         end_reason = "Simulation ended" # Default end reason
@@ -338,8 +346,8 @@ if __name__ == "__main__":
     width = 2160
     height = 1920
     # Simulation pixel size
-    pixel_size= 10
-    frame_rate = 74.97
+    pixel_size= 5
+    frame_rate = 299.88
 
     #Provide the parameters for simulation
     game = GameOfLife(width, height, pixel_size, frame_rate)
