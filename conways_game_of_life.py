@@ -4,6 +4,32 @@ import scipy
 import json
 import time
 
+PRESET_PATTERNS = {
+    "Still Lifes": {
+        "Block": {"pattern": [(0,0), (0,1), (1,0), (1,1)], "width": 2, "height": 2},
+        "Beehive": {"pattern": [(0,1), (0,2), (1,0), (1,3), (2,1), (2,2)], "width": 4, "height": 3},
+        "Loaf": {"pattern": [(0,1), (0,2), (1,0), (1,3), (2,1), (2,3), (3,2)], "width": 4, "height": 4},
+        "Boat": {"pattern": [(0,0), (0,1), (1,0), (1,2), (2,1)], "width": 3, "height": 3},
+    },
+    "Oscillators": {
+        "Blinker": {"pattern": [(0,0), (0,1), (0,2)], "width": 3, "height": 1},
+        "Toad": {"pattern": [(0,1), (0,2), (0,3), (1,0), (1,1), (1,2)], "width": 4, "height": 2},
+        "Beacon": {"pattern": [(0,0), (0,1), (1,0), (1,1), (2,2), (2,3), (3,2), (3,3)], "width": 4, "height": 4},
+        "Pulsar": {"pattern": [(0,2),(0,3),(0,4),(0,8),(0,9),(0,10), (2,0),(2,5),(2,7),(2,12), (3,0),(3,5),(3,7),(3,12), (4,0),(4,5),(4,7),(4,12), (5,2),(5,3),(5,4),(5,8),(5,9),(5,10), (7,2),(7,3),(7,4),(7,8),(7,9),(7,10), (8,0),(8,5),(8,7),(8,12), (9,0),(9,5),(9,7),(9,12), (10,0),(10,5),(10,7),(10,12), (12,2),(12,3),(12,4),(12,8),(12,9),(12,10)], "width": 13, "height": 13},
+    },
+    "Spaceships": {
+        "Glider": {"pattern": [(0,1), (1,2), (2,0), (2,1), (2,2)], "width": 3, "height": 3},
+        "LWSS": {"pattern": [(0,0), (0,3), (1,4), (2,0), (2,4), (3,1), (3,2), (3,3), (3,4)], "width": 5, "height": 4},
+    },
+    "Methuselahs": {
+        "R-pentomino": {"pattern": [(0,1), (0,2), (1,0), (1,1), (2,1)], "width": 3, "height": 3},
+        "Acorn": {"pattern": [(0,1), (1,3), (2,0), (2,1), (2,4), (2,5), (2,6)], "width": 7, "height": 3},
+    },
+    "Guns": {
+        "Gosper Glider Gun": {"pattern": [(0,24),(1,22),(1,24),(2,12),(2,13),(2,20),(2,21),(2,34),(2,35),(3,11),(3,15),(3,20),(3,21),(3,34),(3,35),(4,0),(4,1),(4,10),(4,16),(4,20),(4,21),(5,0),(5,1),(5,10),(5,14),(5,16),(5,17),(5,22),(5,24),(6,10),(6,16),(6,24),(7,11),(7,15),(8,12),(8,13)], "width": 36, "height": 9},
+    }
+}
+
 class GameOfLife:
     def __init__(self, width, height, cell_size, fps):
         self.WIDTH, self.HEIGHT = width, height
@@ -26,6 +52,12 @@ class GameOfLife:
         self.countdown_timer = 15
         self.start_time = None
         self.show_countdown_prompt = True
+        self.current_pattern_data = None
+        self.placing_pattern_mode = False
+        self.pattern_preview_pos = None
+        self.show_pattern_library = False
+        self.pattern_library_buttons = []
+        self.PATTERN_LIBRARY_AREA_RECT = pygame.Rect(50, 50, 250, self.HEIGHT - 100)
         
         # Initialize neighbor counts array
         self.neighbor_counts = np.zeros((self.ROWS, self.COLS), dtype=int)
@@ -46,7 +78,7 @@ class GameOfLife:
 
         button_y = self.HEIGHT - button_height - margin_bottom
 
-        button_labels = ["Start", "Clear", "Save", "Load", "Load Default"] # Added "Load Default"
+        button_labels = ["Start", "Clear", "Save", "Load", "Load Default", "Library"] # Added "Library"
         num_buttons = len(button_labels)
         total_buttons_width = (num_buttons * button_width) + ((num_buttons - 1) * button_padding)
         start_x_buttons = (self.WIDTH - total_buttons_width) // 2
@@ -93,6 +125,21 @@ class GameOfLife:
                         color = (0, 0, 0)  # Black for dead cells
                     pygame.draw.rect(self.screen, color, (col * self.CELL_SIZE, row * self.CELL_SIZE, self.CELL_SIZE, self.CELL_SIZE), 0)
 
+        if self.editing_mode and self.placing_pattern_mode and self.current_pattern_data and self.pattern_preview_pos:
+            pattern_cells = self.current_pattern_data['pattern']
+            preview_origin_row, preview_origin_col = self.pattern_preview_pos
+
+            for rel_row, rel_col in pattern_cells:
+                draw_row = preview_origin_row + rel_row
+                draw_col = preview_origin_col + rel_col
+
+                if 0 <= draw_row < self.ROWS and 0 <= draw_col < self.COLS:
+                    cell_rect = pygame.Rect(draw_col * self.CELL_SIZE,
+                                            draw_row * self.CELL_SIZE,
+                                            self.CELL_SIZE,
+                                            self.CELL_SIZE)
+                    pygame.draw.rect(self.screen, (100, 100, 150), cell_rect) # Solid light blue/purple for preview
+
     def update_neighbor_counts(self):
         # Use convolution to efficiently calculate neighbor counts
         kernel = np.array([[1, 1, 1],
@@ -136,55 +183,84 @@ class GameOfLife:
         return new_grid # new_grid is already a NumPy array
 
     def save_grid_to_file(self, filename):
+        live_cells = []
+        for r in range(self.ROWS):
+            for c in range(self.COLS):
+                if self.grid[r, c] == 1:
+                    live_cells.append((r, c))
+
+        if not live_cells:
+            print("No pattern to save. Grid is empty.")
+            return
+
+        min_row = min(r for r, c in live_cells)
+        max_row = max(r for r, c in live_cells)
+        min_col = min(c for r, c in live_cells)
+        max_col = max(c for r, c in live_cells)
+
+        pattern_width = max_col - min_col + 1
+        pattern_height = max_row - min_row + 1
+
+        relative_pattern_cells = []
+        for r, c in live_cells:
+            relative_pattern_cells.append((r - min_row, c - min_col))
+
+        save_data = {
+            "name": "user_saved_pattern", # Placeholder name
+            "pattern": relative_pattern_cells,
+            "width": pattern_width,
+            "height": pattern_height
+        }
+
         try:
-            grid_list = self.grid.tolist()
             with open(filename, 'w') as f:
-                json.dump(grid_list, f)
-            print(f"Grid successfully saved to {filename}")
+                json.dump(save_data, f, indent=4)
+            print(f"Pattern successfully saved to {filename}")
         except (IOError, OSError) as e:
-            print(f"Error saving grid to {filename}: {e}")
+            print(f"Error saving pattern to {filename}: {e}")
 
     def load_grid_from_file(self, filename):
         try:
             with open(filename, 'r') as f:
-                grid_list = json.load(f)
+                loaded_data = json.load(f)
 
-            # Validate structure and dimensions
-            if not isinstance(grid_list, list):
-                print(f"Error: Data in {filename} is not a list.")
+            # Validate loaded data structure
+            if not isinstance(loaded_data, dict):
+                print(f"Error: Invalid pattern file format in {filename}. Data should be a dictionary.")
                 return
-            if len(grid_list) != self.ROWS:
-                print(f"Error: Row count in {filename} ({len(grid_list)}) does not match simulation ({self.ROWS}).")
-                return
-            if self.ROWS > 0:
-                if not isinstance(grid_list[0], list):
-                    print(f"Error: Data in {filename} is not a list of lists.")
+
+            required_keys = ["pattern", "width", "height"]
+            for key in required_keys:
+                if key not in loaded_data:
+                    print(f"Error: Invalid pattern file format in {filename}. Missing key: '{key}'.")
                     return
-                if len(grid_list[0]) != self.COLS:
-                    print(f"Error: Column count in {filename} ({len(grid_list[0])}) does not match simulation ({self.COLS}).")
-                    return
-            elif self.COLS != 0 : # ROWS is 0, but COLS is not, inconsistent
-                print(f"Error: Column count in {filename} ({len(grid_list[0]) if self.ROWS > 0 and len(grid_list) > 0 else 'N/A'}) does not match simulation ({self.COLS}).")
+
+            if not isinstance(loaded_data["pattern"], list):
+                print(f"Error: Invalid pattern file format in {filename}. 'pattern' should be a list.")
+                return
+            if not isinstance(loaded_data["width"], int):
+                print(f"Error: Invalid pattern file format in {filename}. 'width' should be an integer.")
+                return
+            if not isinstance(loaded_data["height"], int):
+                print(f"Error: Invalid pattern file format in {filename}. 'height' should be an integer.")
                 return
 
+            # Store pattern data and enter placement mode
+            self.current_pattern_data = loaded_data
+            self.placing_pattern_mode = True
+            self.pattern_preview_pos = None # Or (0,0) - will be updated by mouse move
 
-            loaded_grid = np.array(grid_list, dtype=int)
-            self.grid = loaded_grid
-
-            # Update cell ages for the loaded grid
-            self.cell_ages.fill(0) # Clear existing ages
-            self.cell_ages[self.grid == 1] = 1 # Set age to 1 for all live cells
-
-            print(f"Grid successfully loaded from {filename}")
+            pattern_name = loaded_data.get("name", "Unnamed Pattern")
+            print(f"Pattern '{pattern_name}' loaded from {filename}. Move mouse to position and click to place.")
 
         except FileNotFoundError:
             print(f"Error: File {filename} not found.")
         except json.JSONDecodeError:
             print(f"Error: Could not decode JSON from {filename}. File might be corrupted or not valid JSON.")
         except (IOError, OSError) as e:
-            print(f"Error loading grid from {filename}: {e}")
-        except Exception as e: # Catch any other unexpected errors during loading/validation
-            print(f"An unexpected error occurred while loading {filename}: {e}")
+            print(f"Error loading pattern from {filename}: {e}")
+        except Exception as e: # Catch any other unexpected errors
+            print(f"An unexpected error occurred while loading pattern from {filename}: {e}")
 
 
     def draw_editor_ui(self):
@@ -200,6 +276,58 @@ class GameOfLife:
             text_rect = text_surf.get_rect(center=button['rect'].center)
             self.screen.blit(text_surf, text_rect)
 
+        if self.show_pattern_library:
+            # Draw a background for the library panel
+            library_bg_color = (50, 50, 50) # Dark grey
+            pygame.draw.rect(self.screen, library_bg_color, self.PATTERN_LIBRARY_AREA_RECT)
+
+            self.pattern_library_buttons = [] # Clear old buttons
+            item_y_offset = self.PATTERN_LIBRARY_AREA_RECT.top + 10
+            item_x_pos = self.PATTERN_LIBRARY_AREA_RECT.left + 10
+            item_height = 30 # Approximate height of a text item
+            item_padding = 5
+
+            for category_name, category_patterns in PRESET_PATTERNS.items():
+                # Draw category name
+                cat_surf = self.button_font.render(f"[{category_name}]", True, (200, 200, 200)) # Lighter color for category
+                cat_rect = cat_surf.get_rect(topleft=(item_x_pos, item_y_offset))
+                self.screen.blit(cat_surf, cat_rect)
+                item_y_offset += item_height # Spacing for category title
+
+                for pattern_name, pattern_data in category_patterns.items():
+                    if item_y_offset + item_height > self.PATTERN_LIBRARY_AREA_RECT.bottom - 10: # Check for overflow
+                        # TODO: Add a visual cue or logging if items are being truncated.
+                        break
+
+                    pat_text_surf = self.button_font.render(pattern_name, True, (255, 255, 255))
+                    # Create a rect for the pattern name for click detection and highlighting
+                    pat_rect = pat_text_surf.get_rect(topleft=(item_x_pos + 10, item_y_offset)) # Indent pattern names
+
+                    self.pattern_library_buttons.append({
+                        'label': pattern_name,
+                        'rect': pat_rect,
+                        'action': 'select_pattern',
+                        'pattern_data': pattern_data.copy() # Store a copy of the pattern data
+                    })
+
+                    # Highlight if mouse is over this specific pattern button
+                    if pat_rect.collidepoint(pygame.mouse.get_pos()):
+                        pygame.draw.rect(self.screen, (70, 70, 70), pat_rect) # Highlight background
+
+                    self.screen.blit(pat_text_surf, pat_rect)
+                    item_y_offset += item_height + item_padding
+
+                item_y_offset += item_height // 2 # Extra spacing between categories
+                if item_y_offset + item_height > self.PATTERN_LIBRARY_AREA_RECT.bottom - 10: # Check again for category overflow
+                    break
+
+        if self.editing_mode and self.placing_pattern_mode and self.current_pattern_data:
+            pattern_name = self.current_pattern_data.get("name", "Unnamed Pattern")
+            placement_text = f"Placing: {pattern_name}. Left-click: place. Right-click/Esc: cancel."
+            text_surf = self.font.render(placement_text, True, (255, 255, 0)) # Yellow text
+            text_rect = text_surf.get_rect(centerx=self.WIDTH // 2, top=10)
+            self.screen.blit(text_surf, text_rect)
+
     def run_simulation(self):
         running = True
         #Start a timer
@@ -213,8 +341,15 @@ class GameOfLife:
             # This top-level event loop is being restructured.
 
             if self.editing_mode:
+                # Update pattern preview position if in placement mode
+                if self.placing_pattern_mode and self.current_pattern_data:
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    grid_row = mouse_y // self.CELL_SIZE
+                    grid_col = mouse_x // self.CELL_SIZE
+                    self.pattern_preview_pos = (grid_row, grid_col)
+
                 self.screen.fill((0,0,0)) # Clear screen
-                self.draw_grid()
+                self.draw_grid() # This will now also draw the preview if active
 
                 if self.show_countdown_prompt:
                     elapsed_time = time.time() - self.start_time
@@ -239,46 +374,136 @@ class GameOfLife:
                         end_reason = "User quit editor" if self.editing_mode else "User quit simulation"
                         break # Break from event loop
 
-                    if self.show_countdown_prompt and event.type == pygame.KEYDOWN:
-                        self.show_countdown_prompt = False
-                        # Optional: Reset self.start_time = time.time() if any key should reset countdown
-                        # For now, any key just cancels the auto-start prompt. User can click Start.
+                    # Handle ESC key press for cancelling placement or countdown prompt
+                    if event.type == pygame.KEYDOWN:
+                        if self.placing_pattern_mode and event.key == pygame.K_ESCAPE:
+                            self.placing_pattern_mode = False
+                            self.current_pattern_data = None
+                            self.pattern_preview_pos = None
+                            print("Pattern placement cancelled.")
+                            # Consider event handled to prevent other keydown actions
+                        elif self.show_countdown_prompt: # Original logic for countdown
+                             self.show_countdown_prompt = False
+                             # Optional: Reset self.start_time = time.time() if any key should reset countdown
 
                     if not self.show_countdown_prompt and event.type == pygame.MOUSEBUTTONDOWN:
                         mouse_pos = pygame.mouse.get_pos()
-                        button_clicked_in_editor = False
-                        if self.show_buttons: # Ensure buttons are only processed if visible
+                        button_clicked_in_editor = False # General flag for UI interaction
+
+                        # 1. Pattern Placement Logic (Left Click)
+                        if self.placing_pattern_mode and event.button == 1 and \
+                           self.current_pattern_data and self.pattern_preview_pos and \
+                           not (self.show_pattern_library and self.PATTERN_LIBRARY_AREA_RECT.collidepoint(mouse_pos)):
+
+                            place_origin_row, place_origin_col = self.pattern_preview_pos
+                            pattern_cells = self.current_pattern_data['pattern']
+
+                            for rel_row, rel_col in pattern_cells:
+                                target_row = place_origin_row + rel_row
+                                target_col = place_origin_col + rel_col
+                                if 0 <= target_row < self.ROWS and 0 <= target_col < self.COLS:
+                                    self.grid[target_row, target_col] = 1
+                                    self.cell_ages[target_row, target_col] = 1
+
+                            self.placing_pattern_mode = False
+                            self.current_pattern_data = None
+                            self.pattern_preview_pos = None
+                            print("Pattern placed.")
+                            button_clicked_in_editor = True # Consumed the click
+
+                        # 2. Pattern Placement Cancellation (Right Click)
+                        elif self.placing_pattern_mode and event.button == 3:
+                            self.placing_pattern_mode = False
+                            self.current_pattern_data = None
+                            self.pattern_preview_pos = None
+                            print("Pattern placement cancelled.")
+                            button_clicked_in_editor = True # Consumed the click
+
+                        # 3. Pattern Library Interaction
+                        elif self.show_pattern_library and self.PATTERN_LIBRARY_AREA_RECT.collidepoint(mouse_pos):
+                            button_clicked_in_editor = True
+                            for lib_button in self.pattern_library_buttons:
+                                if lib_button['rect'].collidepoint(mouse_pos):
+                                    if lib_button['action'] == 'select_pattern':
+                                        self.current_pattern_data = lib_button['pattern_data']
+                                        self.placing_pattern_mode = True
+                                        self.show_pattern_library = False
+                                        self.pattern_preview_pos = None
+                                        print(f"Pattern '{lib_button['label']}' selected. Click on grid to place.")
+                                        break
+
+                        # 4. Main UI Buttons
+                        elif self.show_buttons:
                             for button in self.buttons:
                                 if button['rect'].collidepoint(mouse_pos):
                                     button_clicked_in_editor = True
-                                    if button['action'] == 'start':
+                                    action = button.get('action')
+
+                                    if action == 'start':
                                         self.editing_mode = False
-                                        self.show_countdown_prompt = False # Ensure prompt doesn't reappear
+                                        self.show_countdown_prompt = False
                                         self.generation = 0
                                         self.stable_count = 0
                                         self.stable_generation = None
                                         previous_grids = [str(self.grid.tolist())]
                                         self.cell_ages[ (self.grid == 1) & (self.cell_ages == 0) ] = 1
-                                    elif button['action'] == 'clear':
+                                    elif action == 'clear':
                                         self.grid.fill(0)
                                         self.cell_ages.fill(0)
-                                    elif button['action'] == 'save':
-                                        self.save_grid_to_file("custom_grid.json")
-                                    elif button['action'] == 'load':
-                                        self.load_grid_from_file("custom_grid.json")
-                                    elif button['action'] == 'load_default':
-                                        self.grid = self.initialize_grid()
-                                        self.cell_ages.fill(0)
-                                        self.cell_ages[self.grid == 1] = 1
-                                        print("Default R-pentomino pattern loaded.")
+                                        self.placing_pattern_mode = False # Cancel pattern placement on clear
+                                        self.current_pattern_data = None
+                                    elif action == 'save':
+                                        if self.placing_pattern_mode:
+                                            self.placing_pattern_mode = False
+                                            self.current_pattern_data = None
+                                            self.pattern_preview_pos = None
+                                            print("Pattern placement cancelled before saving.")
+                                        self.save_grid_to_file("custom_pattern.json")
+                                    elif action == 'load':
+                                        if self.placing_pattern_mode:
+                                            self.placing_pattern_mode = False
+                                            self.current_pattern_data = None
+                                            self.pattern_preview_pos = None
+                                            print("Pattern placement cancelled before loading new pattern.")
+                                        self.load_grid_from_file("custom_pattern.json")
+                                    elif action == 'load_default':
+                                        default_pattern_name = "Acorn"
+                                        acorn_data = None
+                                        for category, patterns_in_category in PRESET_PATTERNS.items():
+                                            if default_pattern_name in patterns_in_category:
+                                                acorn_data = patterns_in_category[default_pattern_name]
+                                                break
+
+                                        if acorn_data:
+                                            self.current_pattern_data = acorn_data.copy() # Use a copy
+                                            self.placing_pattern_mode = True
+                                            self.show_pattern_library = False
+                                            self.pattern_preview_pos = None
+                                            self.show_countdown_prompt = False
+                                            print(f"Default pattern '{default_pattern_name}' loaded. Click on grid to place.")
+                                        else:
+                                            print(f"Error: Default pattern '{default_pattern_name}' not found in PRESET_PATTERNS.")
+                                            self.grid.fill(0)
+                                            self.cell_ages.fill(0)
+                                        # Ensure editing_mode remains true, other states reset as needed
+                                        self.editing_mode = True
+                                    elif action == 'toggle_library':
+                                        self.show_pattern_library = not self.show_pattern_library
+                                        if self.show_pattern_library:
+                                            self.placing_pattern_mode = False # Cancel placement when opening library
+                                            self.current_pattern_data = None
                                     break # Exit button loop
 
-                        if not button_clicked_in_editor:
-                            # Grid cell toggling, ensure click is above buttons if they are shown
+                        if not button_clicked_in_editor and not self.placing_pattern_mode:
+                            # Grid cell toggling, only if not placing a pattern and click wasn't on a button
+                            # Ensure click is above buttons if they are shown
                             no_buttons_visible_or_click_above_buttons = not self.show_buttons or \
                                                                     (self.buttons and mouse_pos[1] < self.buttons[0]['rect'].top)
+                            # And also ensure not clicking inside library area if it's open
+                            click_outside_library = not self.show_pattern_library or \
+                                                    (self.show_pattern_library and not self.PATTERN_LIBRARY_AREA_RECT.collidepoint(mouse_pos))
 
-                            if no_buttons_visible_or_click_above_buttons:
+                            if no_buttons_visible_or_click_above_buttons and click_outside_library:
                                 clicked_col = mouse_pos[0] // self.CELL_SIZE
                                 clicked_row = mouse_pos[1] // self.CELL_SIZE
                                 if 0 <= clicked_row < self.ROWS and 0 <= clicked_col < self.COLS:
