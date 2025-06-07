@@ -23,6 +23,9 @@ class GameOfLife:
         # Track the generation where stability is reached
         self.stable_generation = None
         self.stable_count = 0  # Initialize stable_count as a class member
+        self.countdown_timer = 15
+        self.start_time = None
+        self.show_countdown_prompt = True
         
         # Initialize neighbor counts array
         self.neighbor_counts = np.zeros((self.ROWS, self.COLS), dtype=int)
@@ -199,43 +202,63 @@ class GameOfLife:
 
     def run_simulation(self):
         running = True
-        #Start a timer       
-        start_time = time.time()
+        #Start a timer
+        self.start_time = time.time()  # Initialize self.start_time
         # previous_grids is for periodic state detection in simulation mode
         previous_grids = []
         end_reason = "Simulation ended" # Default end reason
 
         while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                    if self.editing_mode: # if quitting from editor, just quit
-                        end_reason = "User quit editor"
-                    else: # if quitting during simulation, normal quit procedure
-                        end_reason = "User quit simulation"
+            # Moved the event loop inside the 'if self.editing_mode:' block or 'else:' block
+            # This top-level event loop is being restructured.
 
-                if self.editing_mode:
-                    if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.editing_mode:
+                self.screen.fill((0,0,0)) # Clear screen
+                self.draw_grid()
+
+                if self.show_countdown_prompt:
+                    elapsed_time = time.time() - self.start_time
+                    if elapsed_time < self.countdown_timer:
+                        remaining_time = int(self.countdown_timer - elapsed_time) + 1
+                        prompt_text = f"Simulation starts in {remaining_time}s. Press any key for edit mode."
+                        text_surface = self.font.render(prompt_text, True, (255, 255, 255))
+                        text_rect = text_surface.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2))
+                        self.screen.blit(text_surface, text_rect)
+                    else:
+                        self.editing_mode = False
+                        self.show_countdown_prompt = False
+                        self.generation = 0
+                        self.stable_count = 0
+                        self.stable_generation = None
+                        previous_grids = [str(self.grid.tolist())]
+                        self.cell_ages[ (self.grid == 1) & (self.cell_ages == 0) ] = 1
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                        end_reason = "User quit editor" if self.editing_mode else "User quit simulation"
+                        break # Break from event loop
+
+                    if self.show_countdown_prompt and event.type == pygame.KEYDOWN:
+                        self.show_countdown_prompt = False
+                        # Optional: Reset self.start_time = time.time() if any key should reset countdown
+                        # For now, any key just cancels the auto-start prompt. User can click Start.
+
+                    if not self.show_countdown_prompt and event.type == pygame.MOUSEBUTTONDOWN:
                         mouse_pos = pygame.mouse.get_pos()
                         button_clicked_in_editor = False
-                        if self.show_buttons:
+                        if self.show_buttons: # Ensure buttons are only processed if visible
                             for button in self.buttons:
                                 if button['rect'].collidepoint(mouse_pos):
                                     button_clicked_in_editor = True
                                     if button['action'] == 'start':
                                         self.editing_mode = False
-                                        # self.show_buttons = False # Keep buttons visible or hide? For now, let's hide.
+                                        self.show_countdown_prompt = False # Ensure prompt doesn't reappear
                                         self.generation = 0
                                         self.stable_count = 0
                                         self.stable_generation = None
-                                        # Reset previous_grids for new simulation session
                                         previous_grids = [str(self.grid.tolist())]
-                                        # Ensure cell ages are consistent if starting with a pre-drawn pattern
-                                        # If grid has live cells not set by user, their age might be 0.
-                                        # For simplicity, assume user is happy with ages or uses clear.
-                                        # A more robust way: iterate self.grid, if cell is 1 and age is 0, set age to 1.
                                         self.cell_ages[ (self.grid == 1) & (self.cell_ages == 0) ] = 1
-
                                     elif button['action'] == 'clear':
                                         self.grid.fill(0)
                                         self.cell_ages.fill(0)
@@ -248,34 +271,42 @@ class GameOfLife:
                                         self.cell_ages.fill(0)
                                         self.cell_ages[self.grid == 1] = 1
                                         print("Default R-pentomino pattern loaded.")
-                                    break # Exit button loop once a button is clicked
+                                    break # Exit button loop
 
                         if not button_clicked_in_editor:
-                            # Grid cell toggling if click was not on a button
-                            # Ensure click is within grid display area (if UI takes up other space)
-                            # For now, assuming buttons don't overlap clickable grid area significantly
-                            # or are outside typical drawing region if screen is larger than grid
-                            if mouse_pos[1] < self.buttons[0]['rect'].top: # Basic check: click is above buttons
+                            # Grid cell toggling, ensure click is above buttons if they are shown
+                            no_buttons_visible_or_click_above_buttons = not self.show_buttons or \
+                                                                    (self.buttons and mouse_pos[1] < self.buttons[0]['rect'].top)
+
+                            if no_buttons_visible_or_click_above_buttons:
                                 clicked_col = mouse_pos[0] // self.CELL_SIZE
                                 clicked_row = mouse_pos[1] // self.CELL_SIZE
                                 if 0 <= clicked_row < self.ROWS and 0 <= clicked_col < self.COLS:
-                                    self.grid[clicked_row, clicked_col] = 1 - self.grid[clicked_row, clicked_col] # Toggle
+                                    self.grid[clicked_row, clicked_col] = 1 - self.grid[clicked_row, clicked_col]
                                     if self.grid[clicked_row, clicked_col] == 1:
-                                        self.cell_ages[clicked_row, clicked_col] = 1 # New cells start with age 1
+                                        self.cell_ages[clicked_row, clicked_col] = 1
                                     else:
                                         self.cell_ages[clicked_row, clicked_col] = 0
 
-            if not running: # Exit if QUIT event was processed (either from editor or simulation)
-                break
+                if not running: # If QUIT event was processed from within editor event loop
+                    break
 
-            if self.editing_mode:
-                self.screen.fill((0,0,0)) # Clear screen
-                self.draw_grid()
-                if self.show_buttons:
+                if self.show_buttons: # Draw buttons after event handling and other draws
                     self.draw_editor_ui()
+
                 pygame.display.flip()
-                self.clock.tick(self.FPS) # Keep editor responsive
+                self.clock.tick(self.FPS)
+
             else: # Simulation Mode
+                # Event handling for simulation mode (mostly just QUIT)
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                        end_reason = "User quit simulation"
+                        break # Break from event loop
+                if not running: # If QUIT event was processed
+                    break
+
                 self.draw_grid()
                 # Display generation number on top of the grid
                 gen_text_surf = self.font.render(f"Generation: {self.generation}", True, (255, 255, 255))
