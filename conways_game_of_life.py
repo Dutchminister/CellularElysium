@@ -125,20 +125,20 @@ class GameOfLife:
                         color = (0, 0, 0)  # Black for dead cells
                     pygame.draw.rect(self.screen, color, (col * self.CELL_SIZE, row * self.CELL_SIZE, self.CELL_SIZE, self.CELL_SIZE), 0)
 
-        if self.editing_mode and self.placing_pattern_mode and self.current_pattern_data and self.pattern_preview_pos:
-            pattern_cells = self.current_pattern_data['pattern']
-            preview_origin_row, preview_origin_col = self.pattern_preview_pos
+            if self.editing_mode and self.placing_pattern_mode and self.current_pattern_data and self.pattern_preview_pos:
+                pattern_cells = self.current_pattern_data['pattern']
+                preview_origin_row, preview_origin_col = self.pattern_preview_pos
 
-            for rel_row, rel_col in pattern_cells:
-                draw_row = preview_origin_row + rel_row
-                draw_col = preview_origin_col + rel_col
+                for rel_row, rel_col in pattern_cells:
+                    draw_row = preview_origin_row + rel_row
+                    draw_col = preview_origin_col + rel_col
 
-                if 0 <= draw_row < self.ROWS and 0 <= draw_col < self.COLS:
-                    cell_rect = pygame.Rect(draw_col * self.CELL_SIZE,
-                                            draw_row * self.CELL_SIZE,
-                                            self.CELL_SIZE,
-                                            self.CELL_SIZE)
-                    pygame.draw.rect(self.screen, (100, 100, 150), cell_rect) # Solid light blue/purple for preview
+                    if 0 <= draw_row < self.ROWS and 0 <= draw_col < self.COLS:
+                        cell_rect = pygame.Rect(draw_col * self.CELL_SIZE,
+                                                draw_row * self.CELL_SIZE,
+                                                self.CELL_SIZE,
+                                                self.CELL_SIZE)
+                        pygame.draw.rect(self.screen, (100, 100, 150), cell_rect) # Solid light blue/purple for preview
 
     def update_neighbor_counts(self):
         # Use convolution to efficiently calculate neighbor counts
