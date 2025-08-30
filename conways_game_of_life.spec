@@ -6,12 +6,21 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=[
+        'scipy.signal',
+        'scipy.special',
+        'scipy.special._ufuncs',
+        'scipy.special._cdflib',
+        'scipy.linalg',
+        'scipy._lib',
+        'scipy._lib._util'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
+    excludedimports=['api-ms-win-core-path-l1-1-0.dll']
 )
 pyz = PYZ(a.pure)
 

@@ -37,7 +37,7 @@ class GameOfLife:
         self.ROWS, self.COLS = height // cell_size, width // cell_size
         self.FPS = fps
         self.generation = 0  # Track current generation
-
+        
         pygame.init()
         # Enable hardware acceleration
         self.screen = pygame.display.set_mode((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -108,37 +108,40 @@ class GameOfLife:
         return grid
 
     def draw_grid(self):
-            self.screen.fill((0, 0, 0))
-            for row in range(self.ROWS):
-                for col in range(self.COLS):
-                    if self.grid[row, col] == 1:
-                        age = self.cell_ages[row, col]
-                        if age == 1:
-                            color = (255, 255, 255)  # Bright white for new cells
-                        elif age == 2:
-                            color = (220, 220, 220)
-                        elif age == 3:
-                            color = (180, 180, 180)
-                        else:  # age >= 4
-                            color = (140, 140, 140)  # Darker grey for older cells
+        self.screen.fill((0, 0, 0))
+        for row in range(self.ROWS):
+            for col in range(self.COLS):
+                if self.grid[row, col] == 1:
+                    age = self.cell_ages[row, col]
+                    if age == 1:
+                        color = (0, 255, 0)  # Bright green for newborn
+                    elif age == 2:
+                        color = (255, 255, 0)  # Yellow for young
+                    elif age == 3:
+                        color = (255, 165, 0)  # Orange for mature
+                    elif age == 4:
+                        color = (255, 0, 0)  # Red for old
                     else:
-                        color = (0, 0, 0)  # Black for dead cells
-                    pygame.draw.rect(self.screen, color, (col * self.CELL_SIZE, row * self.CELL_SIZE, self.CELL_SIZE, self.CELL_SIZE), 0)
+                        color = (128, 0, 128)  # Purple for very old
+                else:
+                    color = (0, 0, 0)  # Black for dead cells
+                pygame.draw.rect(self.screen, color, (col * self.CELL_SIZE, row * self.CELL_SIZE, self.CELL_SIZE, self.CELL_SIZE), 0)
 
-            if self.editing_mode and self.placing_pattern_mode and self.current_pattern_data and self.pattern_preview_pos:
-                pattern_cells = self.current_pattern_data['pattern']
-                preview_origin_row, preview_origin_col = self.pattern_preview_pos
+        if self.editing_mode and self.placing_pattern_mode and self.current_pattern_data and self.pattern_preview_pos:
+            pattern_cells = self.current_pattern_data['pattern']
+            preview_origin_row, preview_origin_col = self.pattern_preview_pos
+            for rel_row, rel_col in pattern_cells:
+                draw_row = preview_origin_row + rel_row
+                draw_col = preview_origin_col + rel_col
+                if 0 <= draw_row < self.ROWS and 0 <= draw_col < self.COLS:
+                    cell_rect = pygame.Rect(
+                        draw_col * self.CELL_SIZE,
+                        draw_row * self.CELL_SIZE,
+                        self.CELL_SIZE,
+                        self.CELL_SIZE
+                    )
+                    pygame.draw.rect(self.screen, (100, 100, 150), cell_rect)  # Solid light blue/purple for preview
 
-                for rel_row, rel_col in pattern_cells:
-                    draw_row = preview_origin_row + rel_row
-                    draw_col = preview_origin_col + rel_col
-
-                    if 0 <= draw_row < self.ROWS and 0 <= draw_col < self.COLS:
-                        cell_rect = pygame.Rect(draw_col * self.CELL_SIZE,
-                                                draw_row * self.CELL_SIZE,
-                                                self.CELL_SIZE,
-                                                self.CELL_SIZE)
-                        pygame.draw.rect(self.screen, (100, 100, 150), cell_rect) # Solid light blue/purple for preview
 
     def update_neighbor_counts(self):
         # Use convolution to efficiently calculate neighbor counts
@@ -353,20 +356,15 @@ class GameOfLife:
 
                 if self.show_countdown_prompt:
                     elapsed_time = time.time() - self.start_time
-                    if elapsed_time < self.countdown_timer:
+                    if elapsed_time >= self.countdown_timer:
+                        self.editing_mode = False
+                        self.show_countdown_prompt = False
+                    else:
                         remaining_time = int(self.countdown_timer - elapsed_time) + 1
                         prompt_text = f"Simulation starts in {remaining_time}s. Press any key for edit mode."
                         text_surface = self.font.render(prompt_text, True, (255, 255, 255))
                         text_rect = text_surface.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2))
                         self.screen.blit(text_surface, text_rect)
-                    else:
-                        self.editing_mode = False
-                        self.show_countdown_prompt = False
-                        self.generation = 0
-                        self.stable_count = 0
-                        self.stable_generation = None
-                        previous_grids = [str(self.grid.tolist())]
-                        self.cell_ages[ (self.grid == 1) & (self.cell_ages == 0) ] = 1
 
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -594,7 +592,8 @@ class GameOfLife:
                     if event_report.type == pygame.KEYDOWN:
                         if event_report.key == pygame.K_RETURN or event_report.key == pygame.K_SPACE:
                             exit_pressed = True
-
+        print("Simulation ended due to:", end_reason)
+        time.sleep(5)
         pygame.quit()
 
 if __name__ == "__main__":
@@ -602,8 +601,8 @@ if __name__ == "__main__":
     width = 2160
     height = 1920
     # Simulation pixel size
-    pixel_size= 5
-    frame_rate = 299.88
+    pixel_size= 7
+    frame_rate = 74.97
 
     #Provide the parameters for simulation
     game = GameOfLife(width, height, pixel_size, frame_rate)
